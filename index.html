@@ -46,19 +46,121 @@
       </li>
     </ul>
     <div class="add-form">
-      <input type="text" class="add-form-name" placeholder="Введите ваше имя" />
-      <textarea type="textarea" class="add-form-text" placeholder="Введите ваш коментарий" rows="4"></textarea>
+      <div class="add-form-error add-form-error__hide" id="name-error"></div>
+      <input type="text" class="add-form-name" placeholder="Введите ваше имя" id="name-input" />
+      <div class="add-form-error add-form-error__hide" id="text-error"></div>
+      <textarea type="textarea" class="add-form-text" placeholder="Введите ваш коментарий" rows="4"
+        id="text-input"></textarea>
       <div class="add-form-row">
-        <button class="add-form-button">Написать</button>
-      </div>
+        <button disabled class="add-form-button" id="send-button">Написать</button>        
+      </div>      
     </div>
+    <button class="add-form-button" id="delete-button">Удалить последний комментарий</button>
   </div>
 </body>
 
 <script>
   "use strict";
-  // Код писать здесь
-  console.log("It works!");
+  const sendButtonEl = document.getElementById('send-button');
+  const deleteButtonEl = document.getElementById('delete-button');
+  const nameInputEl = document.getElementById('name-input');
+  const textInputEl = document.getElementById('text-input');
+  const textErrorEl = document.getElementById('text-error');
+  const nameErrorEl = document.getElementById('name-error');
+
+  const fields = [
+    { "input": nameInputEl, "err": nameErrorEl, "message": "Заполните имя" },
+    { "input": textInputEl, "err": textErrorEl, "message": "Напишите текст" }
+  ]
+
+  function formValidate(...fields) {
+    const is_valid = []
+
+    for (const i in fields) {
+      if (fields[i]["input"].value === "") {
+        fields[i]["err"].classList.remove('add-form-error__hide');
+        fields[i]["err"].textContent = fields[i]["message"];
+        is_valid.push(false);
+      }
+      else {
+        fields[i]["err"].classList.add('add-form-error__hide');
+      }
+    }
+
+    return (is_valid.length === 0);
+  }
+
+  function disableButton(button, ...fields) {
+    // Отключает кнопку Написать если хоть одно переданное поле пустое
+    // Заполняем массив ложью (Форма валидна)
+    let is_invalid = [];
+    for (let i = 0; i < fields.length; i++) {
+      is_invalid.push(false);
+    }
+
+    // Если хоть одно поле пустое - меняем флаг на true (невалдно)
+    for (const i in fields) {
+      if (fields[i]["input"].value.replace(/(\r\n|\n|\r)/gm, "") === "") {
+        is_invalid[i] = true;
+      }
+    }
+
+    // Суммируем массив валидности. Если хоть один флаг true - отключаем кнопку
+    if (is_invalid.reduce((a, b) => a + b) > 0) {
+      button.setAttribute("disabled", "");
+    } else {
+      button.removeAttribute("disabled");
+    }
+  }
+
+  nameInputEl.addEventListener('input', () => disableButton(sendButtonEl, ...fields))
+  textInputEl.addEventListener('input', () => disableButton(sendButtonEl, ...fields))
+
+  sendButtonEl.addEventListener('click', () => {
+    if (!formValidate(...fields)) return;
+
+    const commentsEl = document.getElementById('comments');
+    const date = new Date();
+    const optionsDate = ["ru-RU", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" }];
+    const oldComments = commentsEl.innerHTML;
+    const newComment = `
+    <li class="comment">
+      <div class="comment-header">
+        <div>${nameInputEl.value}</div>
+        <div>${date.toLocaleString(...optionsDate)}</div>
+      </div>
+      <div class="comment-body">
+        <div class="comment-text">
+          ${textInputEl.value}
+        </div>
+      </div>
+      <div class="comment-footer">
+        <div class="likes">
+          <span class="likes-counter">0</span>
+          <button class="like-button"></button>
+        </div>
+      </div>
+    </li>
+    `    
+    commentsEl.innerHTML = oldComments + newComment;
+    nameInputEl.value = "";
+    textInputEl.value = "";
+    sendButtonEl.setAttribute("disabled", "");
+  })
+
+  deleteButtonEl.addEventListener("click", () => {
+    const commentsEl = document.getElementById('comments');
+    const allComments = commentsEl.innerHTML;
+    const lastTag = allComments.lastIndexOf(`<li class="comment">`);
+    commentsEl.innerHTML = allComments.slice(0, lastTag);
+  })
+
+  document.addEventListener('keyup', (e) => {
+    if (e.keyCode === 13) {
+      sendButtonEl.click();
+    }
+  })
+
 </script>
 
 </html>
