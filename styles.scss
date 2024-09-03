@@ -24,7 +24,7 @@ body {
 .comment,
 .add-form {
     width: 596px;
-    box-sizing: border-box;    
+    box-sizing: border-box;
     background: linear-gradient(45deg, rgb(0, 94, 94) 22.92%, #00fff2 100%);
     filter: drop-shadow(0px 20px 67px rgba(0, 0, 0, 0.08));
     border-radius: 20px;
@@ -52,6 +52,8 @@ body {
 
     &-text {
         font-size: 32px;
+        display: flex;
+        flex-direction: column;
     }
 
     &-footer {
@@ -138,7 +140,7 @@ body {
             }
         }
 
-        
+
         &-error,
         &-name,
         &-text {
@@ -147,5 +149,25 @@ body {
             border-radius: 8px;
             border: none;
         }
+    }
+}
+
+.edit-button {
+    margin-top: 12px;
+    font-size: 14px;
+    padding: 5px 10px;
+    background-color: #bcec30;
+    border: none;
+    border-radius: 18px;
+    cursor: pointer;
+
+    &:hover:enabled {
+        transform: scale(1.1);
+        box-shadow: 0 0 9px 2px;
+    }
+
+    &:disabled {
+        cursor: auto;
+        background-color: #c5db82;
     }
 }

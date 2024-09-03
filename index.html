@@ -10,40 +10,7 @@
 <body>
   <div class="container">
     <ul class="comments" id="comments">
-      <li class="comment">
-        <div class="comment-header">
-          <div>Антоша Пашинов</div>
-          <div>02.09.24 12:18</div>
-        </div>
-        <div class="comment-body">
-          <div class="comment-text">
-            Это будет первый комментарий на этой странице
-          </div>
-        </div>
-        <div class="comment-footer">
-          <div class="likes">
-            <span class="likes-counter">3</span>
-            <button class="like-button"></button>
-          </div>
-        </div>
-      </li>
-      <li class="comment">
-        <div class="comment-header">
-          <div>Юля К.</div>
-          <div>01.09.24 10:46</div>
-        </div>
-        <div class="comment-body">
-          <div class="comment-text">
-            Мне нравится как оформлена эта страница!
-          </div>
-        </div>
-        <div class="comment-footer">
-          <div class="likes">
-            <span class="likes-counter">75</span>
-            <button class="like-button -active-like"></button>
-          </div>
-        </div>
-      </li>
+      <!-- Заполняется из JS -->
     </ul>
     <div class="add-form">
       <div class="add-form-error add-form-error__hide" id="name-error"></div>
@@ -52,8 +19,8 @@
       <textarea type="textarea" class="add-form-text" placeholder="Введите ваш коментарий" rows="4"
         id="text-input"></textarea>
       <div class="add-form-row">
-        <button disabled class="add-form-button" id="send-button">Написать</button>        
-      </div>      
+        <button disabled class="add-form-button" id="send-button">Написать</button>
+      </div>
     </div>
     <button class="add-form-button" id="delete-button">Удалить последний комментарий</button>
   </div>
@@ -61,6 +28,7 @@
 
 <script>
   "use strict";
+  const commentsEl = document.getElementById('comments');
   const sendButtonEl = document.getElementById('send-button');
   const deleteButtonEl = document.getElementById('delete-button');
   const nameInputEl = document.getElementById('name-input');
@@ -72,6 +40,114 @@
     { "input": nameInputEl, "err": nameErrorEl, "message": "Заполните имя" },
     { "input": textInputEl, "err": textErrorEl, "message": "Напишите текст" }
   ]
+
+  const comments = [
+    {
+      name: "Антоша Пашинов",
+      text: "Это будет первый комментарий на этой странице",
+      date: "01.09.24, 12:18",
+      likes: 3,
+      is_liked: false,
+      editing: false
+    },
+    {
+      name: "Юля К.",
+      text: "Мне нравится как оформлена эта страница!",
+      date: "02.09.24, 10:46",
+      likes: 75,
+      is_liked: true,
+      editing: false
+    }
+  ];
+
+  const editEventListenerts = () => {
+    const editButtonElemets = document.querySelectorAll(".edit-button");
+
+    for (const btn of editButtonElemets) {
+      btn.addEventListener('click', () => {
+        const index = btn.dataset.index;
+
+        if (comments[index]["editing"]) {          
+          const textInputIndex = document.getElementById(`text-input-${index}`);
+          const textErrorElIndex = document.getElementById(`text-error-${index}`);
+          const field = [{ "input": textInputIndex, "err": textErrorElIndex, "message": "Заполните поле" }]
+
+          if (!formValidate(...field)) return;
+          comments[index]["text"] = textInputIndex.value;
+          comments[index]["editing"] = false;
+        } else {
+          for (const comment of comments) {
+            comment["editing"] = false;
+          }
+          comments[index]["editing"] = true;
+        }
+
+        renderComments();
+      })
+    }
+  }
+
+  const likeEventListenerts = () => {
+    const likeButtonElemets = document.querySelectorAll(".like-button");
+
+    for (const btn of likeButtonElemets) {
+      btn.addEventListener('click', () => {
+        const index = btn.dataset.index;
+
+        if (comments[index]["is_liked"]) {
+          comments[index]["is_liked"] = false;
+          comments[index]["likes"]--;
+        } else {
+          comments[index]["is_liked"] = true;
+          comments[index]["likes"]++;
+        }
+        renderComments();
+      })
+    }
+  }
+
+  const renderComments = () => {
+    const commentsHtml = comments
+      .map((comment, index) => {
+        const activeLike = comment.is_liked === true ? " -active-like" : "";
+        let commentBody = comment.text;
+        let buttonText = "Редактировать";
+
+        if (comment["editing"]) {
+          commentBody =
+            `<div class="add-form-error add-form-error__hide" id="text-error-${index}"></div>
+            <textarea type="textarea" class="add-form-text" placeholder="Введите ваш коментарий" rows="4"
+          id="text-input-${index}">${comment.text}</textarea>`;
+          buttonText = "Сохранить";
+        }
+
+        return `<li class="comment">
+            <div class="comment-header">
+              <div>${comment.name}</div>
+              <div>${comment.date}</div>
+            </div>
+            <div class="comment-body">
+              <div class="comment-text">
+                ${commentBody}
+              </div>       
+            </div>
+            <div class="comment-footer">
+              <div class="likes">
+                <span class="likes-counter">${comment.likes}</span>
+                <button class="like-button${activeLike}" data-index="${index}"></button>
+              </div>
+            </div>
+            <button class="edit-button" data-index="${index}">${buttonText}</button>
+          </li>`
+      })
+      .join("");
+    commentsEl.innerHTML = commentsHtml;
+
+    likeEventListenerts();
+    editEventListenerts();
+  }
+
+  renderComments();
 
   function formValidate(...fields) {
     const is_valid = []
@@ -113,46 +189,36 @@
     }
   }
 
-  nameInputEl.addEventListener('input', () => disableButton(sendButtonEl, ...fields))
-  textInputEl.addEventListener('input', () => disableButton(sendButtonEl, ...fields))
+  nameInputEl.addEventListener('input', () => disableButton(sendButtonEl, ...fields));
+  textInputEl.addEventListener('input', () => disableButton(sendButtonEl, ...fields));
+
 
   sendButtonEl.addEventListener('click', () => {
     if (!formValidate(...fields)) return;
 
-    const commentsEl = document.getElementById('comments');
     const date = new Date();
     const optionsDate = ["ru-RU", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" }];
-    const oldComments = commentsEl.innerHTML;
-    const newComment = `
-    <li class="comment">
-      <div class="comment-header">
-        <div>${nameInputEl.value}</div>
-        <div>${date.toLocaleString(...optionsDate)}</div>
-      </div>
-      <div class="comment-body">
-        <div class="comment-text">
-          ${textInputEl.value}
-        </div>
-      </div>
-      <div class="comment-footer">
-        <div class="likes">
-          <span class="likes-counter">0</span>
-          <button class="like-button"></button>
-        </div>
-      </div>
-    </li>
-    `    
-    commentsEl.innerHTML = oldComments + newComment;
+    comments.push(
+      {
+        name: nameInputEl.value,
+        text: textInputEl.value,
+        date: date.toLocaleString(...optionsDate),
+        likes: 0,
+        is_liked: false,
+        editing: false
+      }
+    )
+    renderComments();
+
     nameInputEl.value = "";
     textInputEl.value = "";
     sendButtonEl.setAttribute("disabled", "");
   })
 
   deleteButtonEl.addEventListener("click", () => {
-    const commentsEl = document.getElementById('comments');
-    const allComments = commentsEl.innerHTML;
-    const lastTag = allComments.lastIndexOf(`<li class="comment">`);
-    commentsEl.innerHTML = allComments.slice(0, lastTag);
+    comments.pop();
+    console.log(comments);
+    renderComments();
   })
 
   document.addEventListener('keyup', (e) => {
