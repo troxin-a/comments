@@ -19,7 +19,7 @@ let fields = [
 
 // Получает данные с API, преобразует в нужный формат, вызывает рендер
 const getComments = () => {
-    fetch("https://wedev-api.sky.pro/api/v1/anton-pashinov/comments", { method: "GET" })
+    fetch("https://wedev-api.sky.pro/api/v1/anton-pashinoff/comments", { method: "GET" })
         .then((response) => {
             response.json().then((responseData) => {
                 comments = responseData.comments.map((item) => {
@@ -86,7 +86,7 @@ const renderForm = () => {
             let text = textScreen(textInputEl.value);
 
 
-            fetch("https://wedev-api.sky.pro/api/v1/anton-pashinov/comments",
+            fetch("https://wedev-api.sky.pro/api/v1/anton-pashinoff/comments",
                 {
                     method: "POST",
                     body: JSON.stringify({
