@@ -124,7 +124,7 @@
           }
           comments[index]["editing"] = true;
         }
-        
+
         renderComments();
       })
     }
@@ -165,7 +165,7 @@
           comments[index]["is_liked"] = true;
           comments[index]["likes"]++;
         }
-        renderComments();        
+        renderComments();
       })
     }
   }
@@ -223,39 +223,27 @@
   // Валидация на пустые строки. Принимает список объектов вида:
   // [ { "input": поле ввода, "err": div с ошибкой, "message": текст ошибки }, ...]
   function formValidate(...fields) {
-    const is_valid = []
+    let is_valid = true
 
     for (const i in fields) {
       if (fields[i]["input"].value === "") {
         fields[i]["err"].classList.remove('add-form-error__hide');
         fields[i]["err"].textContent = fields[i]["message"];
-        is_valid.push(false);
+        is_valid = false;
       }
       else {
         fields[i]["err"].classList.add('add-form-error__hide');
       }
     }
 
-    return (is_valid.length === 0);
+    return is_valid;
   }
 
   // Отключает кнопку Написать если хоть одно переданное поле пустое
-  function disableButton(button, ...fields) {    
-    // Заполняем массив ложью (Форма валидна)
-    let is_invalid = [];
-    for (let i = 0; i < fields.length; i++) {
-      is_invalid.push(false);
-    }
-
-    // Если хоть одно поле пустое - меняем флаг на true (невалдно)
-    for (const i in fields) {
-      if (fields[i]["input"].value.replaceAll("\n", "").replaceAll(" ", "") === "") {
-        is_invalid[i] = true;
-      }
-    }
-
-    // Суммируем массив валидности. Если хоть один флаг true - отключаем кнопку
-    if (is_invalid.reduce((a, b) => a + b) > 0) {
+  function disableButton(button, ...fields) {
+    // Если хотя бы одно поле пустое, отключаем кнопку
+    const isInvalid = fields.some((field) => field.input.value.trim() === "");
+    if (isInvalid) {
       button.setAttribute("disabled", "");
     } else {
       button.removeAttribute("disabled");
