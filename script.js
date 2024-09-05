@@ -11,6 +11,8 @@ const optionsDate = ["ru-RU", { day: "2-digit", month: "2-digit", year: "2-digit
 
 let isLoadComment = false;
 let comments = [];
+let userNameInput = "";
+let userTextInput = "";
 
 let fields = [
     { "input": nameInputEl, "err": nameErrorEl, "message": "Заполните имя" },
@@ -69,9 +71,9 @@ function disableButton(button, ...fields) {
     // Если хотя бы одно поле пустое, отключаем кнопку
     const isInvalid = fields.some((field) => field.input.value.trim() === "");
     if (isInvalid) {
-        button.setAttribute("disabled", "");
+        button.disabled = true;
     } else {
-        button.removeAttribute("disabled");
+        button.disabled = false;
     };
 };
 
@@ -84,7 +86,7 @@ deleteButtonEl.addEventListener("click", () => {
 
 // Получает данные с API, преобразует в нужный формат
 const getComments = () => {
-    return fetch("https://wedev-api.sky.pro/api/v1/anton-pashinoffv/comments", { method: "GET" })
+    return fetch("https://wedev-api.sky.pro/api/v1/anton-pashinov/comments", { method: "GET" })
         .then((response) => {
             return response.json();
         })
@@ -103,16 +105,17 @@ const getComments = () => {
         });
 };
 
+// Рендер формы и добавление обработчиков для ее элементов
 const renderForm = () => {
     if (isLoadComment) {
         addFormEl.innerHTML = `<img src="loader.gif" alt="загрузка">`;
     } else {
         addFormEl.innerHTML = `<div class="add-form">
   <div class="add-form-error add-form-error__hide" id="name-error"></div>
-  <input type="text" class="add-form-name" placeholder="Введите ваше имя" id="name-input" />
+  <input type="text" class="add-form-name" placeholder="Введите ваше имя" id="name-input" value="${userNameInput}"/>
   <div class="add-form-error add-form-error__hide" id="text-error"></div>
   <textarea type="textarea" class="add-form-text" placeholder="Введите ваш коментарий" rows="4"
-  id="text-input"></textarea>
+  id="text-input">${userTextInput}</textarea>
   <div class="add-form-row">
     <button disabled class="add-form-button" id="send-button">Написать</button>
   </div>
@@ -140,35 +143,51 @@ const renderForm = () => {
         // Обработка события Click для кнопки отправки нового комментария
         sendButtonEl.addEventListener('click', () => {
             if (!formValidate(...fields)) return;
-
+            
             isLoadComment = true;
             renderForm();
 
             const date = new Date().toLocaleString(...optionsDate);
-            const name = nameInputEl.value
+            userNameInput = nameInputEl.value
                 .replaceAll("&", "&amp;")
                 .replaceAll("<", "&lt;")
                 .replaceAll(">", "&gt;");
-            let text = textScreen(textInputEl.value);
+            userTextInput = textScreen(textInputEl.value);
 
-            fetch("https://wedev-api.sky.pro/api/v1/anton-pashinoffv/comments",
+            fetch("https://wedev-api.sky.pro/api/v1/anton-pashinov/comments",
                 {
                     method: "POST",
                     body: JSON.stringify({
-                        text: text,
-                        name: name,
-                    }),
+                        text: userTextInput,
+                        name: userNameInput,
+                        forceError: true,
+                    }),                    
                 })
-                .then(() => {
-                    isLoadComment = false;
+                .then((response) => {
+                    if (response.status === 400) {
+                        throw new Error("Текст должен быть не короче трех символов");
+                    };
+                    if (response.status === 500) {
+                        sendButtonEl.click();
+                    };
+                    userNameInput = "";
+                    userTextInput = "";
+                })
+                .then(() => {                    
                     return getComments();
                 })
                 .then(() => {
                     return renderComments();
                 })
                 .then(() => {
+                    isLoadComment = false;
                     renderForm();
-                    sendButtonEl.setAttribute("disabled", "");
+                })
+                .catch((error) => {                                        
+                    isLoadComment = false;
+                    renderForm();
+                    sendButtonEl.disabled = false;
+                    alert(error.message);
                 })
         });
     };
