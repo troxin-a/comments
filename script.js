@@ -17,28 +17,91 @@ let fields = [
     { "input": textInputEl, "err": textErrorEl, "message": "Напишите текст" }
 ];
 
-// Получает данные с API, преобразует в нужный формат, вызывает рендер
-const getComments = () => {
-    fetch("https://wedev-api.sky.pro/api/v1/anton-pashinoff/comments", { method: "GET" })
-        .then((response) => {
-            response.json().then((responseData) => {
-                comments = responseData.comments.map((item) => {
-                    item["name"] = item["author"]["name"];
-                    item["date"] = new Date(Date.parse(item["date"])).toLocaleDateString(...optionsDate);
-                    item["is_liked"] = item["isLiked"];
-                    item["editing"] = false;
-                    delete item["author"];
-                    delete item["isLiked"];
 
-                    return item;
-                });
-                renderComments();
-                renderForm();
+// Функция для имитации запросов в API
+function delay(interval = 300) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve();
+      }, interval);
+    });
+}
+
+// Экранирование текста
+const textScreen = (text) => {
+    let newText = text
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll("[quote]", `<div class="quote">`)
+        .replaceAll("[/quote]", `</div>`)
+        .trim();
+
+    // Чистит от лишних переносов
+    while (newText.includes("\n\n")) {
+        newText = newText.replace("\n\n", "\n");
+    }
+
+    return newText;
+};
+
+// Валидация на пустые строки. Принимает список объектов вида:
+// [ { "input": поле ввода, "err": div с ошибкой, "message": текст ошибки }, ...]
+function formValidate(...fields) {
+    let is_valid = true;
+
+    for (const i in fields) {
+        if (fields[i]["input"].value === "") {
+            fields[i]["err"].classList.remove('add-form-error__hide');
+            fields[i]["err"].textContent = fields[i]["message"];
+            is_valid = false;
+        }
+        else {
+            fields[i]["err"].classList.add('add-form-error__hide');
+        };
+    };
+
+    return is_valid;
+};
+
+// Отключает кнопку Написать если хоть одно переданное поле пустое
+function disableButton(button, ...fields) {
+    // Если хотя бы одно поле пустое, отключаем кнопку
+    const isInvalid = fields.some((field) => field.input.value.trim() === "");
+    if (isInvalid) {
+        button.setAttribute("disabled", "");
+    } else {
+        button.removeAttribute("disabled");
+    };
+};
+
+// Удаление последнего комментария
+deleteButtonEl.addEventListener("click", () => {
+    comments.pop();
+    console.log(comments);
+    renderComments();
+});
+
+// Получает данные с API, преобразует в нужный формат
+const getComments = () => {
+    return fetch("https://wedev-api.sky.pro/api/v1/anton-pashinoffv/comments", { method: "GET" })
+        .then((response) => {
+            return response.json();
+        })
+        .then((responseData) => {
+            comments = responseData.comments.map((item) => {
+                item["name"] = item["author"]["name"];
+                item["date"] = new Date(Date.parse(item["date"])).toLocaleDateString(...optionsDate);
+                item["is_liked"] = item["isLiked"];
+                item["editing"] = false;
+                item["isLikeLoading"] = false;
+                delete item["author"];
+                delete item["isLiked"];
+
+                return item;
             });
         });
 };
-getComments();
-
 
 const renderForm = () => {
     if (isLoadComment) {
@@ -78,6 +141,9 @@ const renderForm = () => {
         sendButtonEl.addEventListener('click', () => {
             if (!formValidate(...fields)) return;
 
+            isLoadComment = true;
+            renderForm();
+
             const date = new Date().toLocaleString(...optionsDate);
             const name = nameInputEl.value
                 .replaceAll("&", "&amp;")
@@ -85,46 +151,52 @@ const renderForm = () => {
                 .replaceAll(">", "&gt;");
             let text = textScreen(textInputEl.value);
 
-
-            fetch("https://wedev-api.sky.pro/api/v1/anton-pashinoff/comments",
+            fetch("https://wedev-api.sky.pro/api/v1/anton-pashinoffv/comments",
                 {
                     method: "POST",
                     body: JSON.stringify({
                         text: text,
                         name: name,
                     }),
-                }).then(() => {
-                    getComments();
-                    isLoadComment = false;                    
-                });
-
-            isLoadComment = true;
-            renderForm();
-
-            // nameInputEl.value = "";
-            // textInputEl.value = "";
-            sendButtonEl.setAttribute("disabled", "");
+                })
+                .then(() => {
+                    isLoadComment = false;
+                    return getComments();
+                })
+                .then(() => {
+                    return renderComments();
+                })
+                .then(() => {
+                    renderForm();
+                    sendButtonEl.setAttribute("disabled", "");
+                })
         });
     };
 };
-renderForm();
 
+// Кнопки лайк
+const likeEventListeners = () => {
+    const likeButtonElemets = document.querySelectorAll(".like-button");
 
-const textScreen = (text) => {
-    let newText = text
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll("[quote]", `<div class="quote">`)
-        .replaceAll("[/quote]", `</div>`)
-        .trim();
+    // События click для всех кнопок лайк
+    for (const btn of likeButtonElemets) {
+        btn.addEventListener('click', (event) => {
+            event.stopPropagation();
+            const index = comments.findIndex(item => item.id === Number(btn.dataset.id));
 
-    // Чистит от лишних переносов
-    while (newText.includes("\n\n")) {
-        newText = newText.replace("\n\n", "\n");
-    }
+            comments[index].isLikeLoading = true;
+            renderComments();
 
-    return newText;
+            delay(2000).then(() => {
+                comments[index].likes = comments[index].is_liked
+                  ? comments[index].likes - 1
+                  : comments[index].likes + 1;
+                  comments[index].is_liked = !comments[index].is_liked;
+                  comments[index].isLikeLoading = false;
+                renderComments();
+              });
+        });
+    };
 };
 
 // Поле ввода редактирования комментария
@@ -186,8 +258,9 @@ const commentEventListeners = () => {
     // События click для всех комментариев (цитируем в новый коммент)
     for (const comment of commentElements) {
         comment.addEventListener('click', function (event) {
-            const quoteText = comments[comment.dataset.index]["text"];
-            const quoteName = comments[comment.dataset.index]["name"];
+            const index = comments.findIndex(item => item.id === Number(comment.dataset.id))
+            const quoteText = comments[index]["text"];
+            const quoteName = comments[index]["name"];
             const text = `[quote]${quoteName}:\n${quoteText}\n[/quote]\n\n`
                 .replaceAll(`<div class="quote">`, `[quote]`)
                 .replaceAll(`</div>`, `[/quote]`);
@@ -197,48 +270,28 @@ const commentEventListeners = () => {
     };
 };
 
-// Кнопка лайк
-const likeEventListeners = () => {
-    const likeButtonElemets = document.querySelectorAll(".like-button");
-
-    // События click для всех кнопок лайк
-    for (const btn of likeButtonElemets) {
-        btn.addEventListener('click', (event) => {
-            event.stopPropagation();
-            const index = btn.dataset.index;
-
-            if (comments[index]["is_liked"]) {
-                comments[index]["is_liked"] = false;
-                comments[index]["likes"]--;
-            } else {
-                comments[index]["is_liked"] = true;
-                comments[index]["likes"]++;
-            }
-            renderComments();
-        });
-    };
-};
-
 // Рендерит комментарии
 const renderComments = () => {
     const commentsHtml = comments
-        .map((comment, index) => {
-            const activeLike = comment.is_liked === true ? " -active-like" : "";
+        .map((comment) => {
+            let activeLike = comment.is_liked ? " -active-like" : "";            
+            comment.isLikeLoading ? activeLike += " -loading-like" : activeLike;
+
             let commentBody = comment.text;
-            let button = `<button class="edit-button" data-index="${index}">Редактировать</button>`;
+            let button = `<button class="edit-button" data-id="${comment.id}">Редактировать</button>`;
 
             if (comment["editing"]) {
                 const commentTextScreen = commentBody
                     .replaceAll(`<div class="quote">`, `[quote]`)
                     .replaceAll(`</div>`, `[/quote]`);
                 commentBody =
-                    `<div class="add-form-error add-form-error__hide" id="text-error-${index}"></div>
+                    `<div class="add-form-error add-form-error__hide" id="text-error-${comment.id}"></div>
             <textarea type="textarea" class="add-form-text edit-field" placeholder="Введите ваш коментарий" rows="4"
-          id="text-input-${index}">${commentTextScreen}</textarea>`;
-                button = `<button class="edit-button save-button" data-index="${index}">Сохранить</button>`;
+          id="text-input-${comment.id}">${commentTextScreen}</textarea>`;
+                button = `<button class="edit-button save-button" data-id="${comment.id}">Сохранить</button>`;
             };
 
-            return `<li class="comment" data-index="${index}">
+            return `<li class="comment" data-id="${comment.id}">
             <div class="comment-header">
               <div>${comment.name}</div>
               <div>${comment.date}</div>
@@ -251,7 +304,7 @@ const renderComments = () => {
             <div class="comment-footer">
               <div class="likes">
                 <span class="likes-counter">${comment.likes}</span>
-                <button class="like-button${activeLike}" data-index="${index}"></button>
+                <button class="like-button${activeLike}" data-id="${comment.id}"></button>
               </div>
             </div>
             ${button}
@@ -266,39 +319,11 @@ const renderComments = () => {
     commentEventListeners();
 }
 
-// Валидация на пустые строки. Принимает список объектов вида:
-// [ { "input": поле ввода, "err": div с ошибкой, "message": текст ошибки }, ...]
-function formValidate(...fields) {
-    let is_valid = true;
 
-    for (const i in fields) {
-        if (fields[i]["input"].value === "") {
-            fields[i]["err"].classList.remove('add-form-error__hide');
-            fields[i]["err"].textContent = fields[i]["message"];
-            is_valid = false;
-        }
-        else {
-            fields[i]["err"].classList.add('add-form-error__hide');
-        };
-    };
-
-    return is_valid;
-};
-
-// Отключает кнопку Написать если хоть одно переданное поле пустое
-function disableButton(button, ...fields) {
-    // Если хотя бы одно поле пустое, отключаем кнопку
-    const isInvalid = fields.some((field) => field.input.value.trim() === "");
-    if (isInvalid) {
-        button.setAttribute("disabled", "");
-    } else {
-        button.removeAttribute("disabled");
-    };
-};
-
-// Удаление последнего комментария
-deleteButtonEl.addEventListener("click", () => {
-    comments.pop();
-    console.log(comments);
-    renderComments();
-});
+getComments()
+    .then(() => {
+        renderComments();        
+    })
+    .then(() => {
+        renderForm();
+    })

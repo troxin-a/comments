@@ -160,4 +160,22 @@ body {
   border-radius: 10px;
   background-color: rgb(0, 94, 94);
   box-shadow: 0 0 3px 2px;
+}
+
+@keyframes rotating {
+  from {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(30deg);
+  }
+  75% {
+    transform: rotate(-30deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+.-loading-like {
+  animation: rotating 2s linear infinite;
 }/*# sourceMappingURL=styles.css.map */
