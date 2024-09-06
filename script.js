@@ -1,6 +1,6 @@
 "use strict";
 
-import { getComments, sendComment } from "./api.js";
+import { getComments, sendComment, toggleLike, deleteComment } from "./api.js";
 import { commentsInnerHTML, formInnerHTML } from "./render.js";
 
 let nameInputEl = document.getElementById('name-input');
@@ -10,12 +10,13 @@ let nameErrorEl = document.getElementById('name-error');
 let sendButtonEl = document.getElementById('send-button');
 const commentsEl = document.getElementById('comments');
 const addFormEl = document.getElementById('form');
-const deleteButtonEl = document.getElementById('delete-button');
 
 let isLoadComment = false;
 let comments = [];
 let userNameInput = "";
 let userTextInput = "";
+
+let token = "bearer asb4c4boc86gasb4c4boc86g37w3cc3bo3b83k4g37k3bk3cg3c03ck4k";
 
 let fields = [
     { "input": nameInputEl, "err": nameErrorEl, "message": "Заполните имя" },
@@ -80,12 +81,6 @@ function disableButton(button, ...fields) {
     };
 };
 
-// Удаление последнего комментария
-deleteButtonEl.addEventListener("click", () => {
-    comments.pop();
-    // renderComments();
-});
-
 // Кнопки лайк
 const likeEventListeners = () => {
     const likeButtonElemets = document.querySelectorAll(".like-button");
@@ -94,71 +89,52 @@ const likeEventListeners = () => {
     for (const btn of likeButtonElemets) {
         btn.addEventListener('click', (event) => {
             event.stopPropagation();
-            const index = comments.findIndex(item => item.id === Number(btn.dataset.id));
 
+            const index = comments.findIndex(item => item.id === btn.dataset.id);
             comments[index].isLikeLoading = true;
             renderComments();
 
-            delay(2000).then(() => {
-                comments[index].likes = comments[index].is_liked
-                    ? comments[index].likes - 1
-                    : comments[index].likes + 1;
-                comments[index].is_liked = !comments[index].is_liked;
-                comments[index].isLikeLoading = false;
-                renderComments();
-            });
+            toggleLike(token, btn.dataset.id)
+                .then((responseData) => {
+                    comments[index].likes = responseData.result["likes"];
+                    comments[index].is_liked = responseData.result["isLiked"];
+                    comments[index].isLikeLoading = false;
+                    renderComments();
+                })
+                .catch(() => {
+                    comments[index].isLikeLoading = false;
+                    renderComments();
+                });
         });
     };
 };
 
-// Поле ввода редактирования комментария
-const editFieldEventListener = () => {
-    const editFieldEl = document.querySelector(".edit-field");
-    const saveButtonEl = document.querySelector(".save-button");
+// Кнопки удалить комментарий
+const deleteEventListeners = () => {
+    const deleteButtonElemets = document.querySelectorAll(".delete-button");
 
-    if (!editFieldEl) {
-        return;
-    };
-
-    editFieldEl.addEventListener('click', (event) => {
-        event.stopPropagation();
-    });
-
-    editFieldEl.addEventListener('keyup', (event) => {
-        if (event.keyCode === 13 && event.ctrlKey) {
-            saveButtonEl.click();
-        }
-    });
-};
-
-// Кнопка редактировать/сохранить комментарий
-const editBtnEventListeners = () => {
-    const editButtonElemets = document.querySelectorAll(".edit-button");
-
-    for (const btn of editButtonElemets) {
+    // События click для всех кнопок лайк
+    for (const btn of deleteButtonElemets) {
         btn.addEventListener('click', (event) => {
             event.stopPropagation();
-            const index = btn.dataset.index;
 
-            // Если идет редактирование
-            if (comments[index]["editing"]) {
-                const textInputIndex = document.getElementById(`text-input-${index}`);
-                const textErrorElIndex = document.getElementById(`text-error-${index}`);
-                const field = [{ "input": textInputIndex, "err": textErrorElIndex, "message": "Заполните текст" }]
+            const index = comments.findIndex(item => item.id === btn.dataset.id);
+            
+            btn.textContent = "Удаление...";
+            btn.disabled = true;
 
-                // Проверка на пустую строку
-                if (!formValidate(...field)) return;
-
-                comments[index]["text"] = textScreen(textInputIndex.value); // чистим строку от лишниъ тегов
-                comments[index]["editing"] = false;
-            } else { // Если не идет редактирование, включаем редактирование (отключая другие)
-                for (const comment of comments) {
-                    comment["editing"] = false;
-                }
-                comments[index]["editing"] = true;
-            }
-
-            renderComments();
+            deleteComment(token, btn.dataset.id)
+                .then(() => {
+                    getComments(token)
+                        .then((data) => {
+                            comments = data;
+                            renderComments();
+                        });
+                })
+                .catch(() => {
+                    btn.textContent = "Удалить";
+                    btn.disabled = false;
+                });
         });
     };
 };
@@ -170,7 +146,7 @@ const commentEventListeners = () => {
     // События click для всех комментариев (цитируем в новый коммент)
     for (const comment of commentElements) {
         comment.addEventListener('click', function (event) {
-            const index = comments.findIndex(item => item.id === Number(comment.dataset.id))
+            const index = comments.findIndex(item => item.id === comment.dataset.id)
             const quoteText = comments[index]["text"];
             const quoteName = comments[index]["name"];
             const text = `[quote]${quoteName}:\n${quoteText}\n[/quote]\n\n`
@@ -183,17 +159,19 @@ const commentEventListeners = () => {
 };
 
 const renderComments = () => {
-    commentsInnerHTML(comments, commentsEl);    
+    commentsInnerHTML(comments, commentsEl);
     likeEventListeners();
-    editFieldEventListener();
-    editBtnEventListeners();
+    deleteEventListeners();
     commentEventListeners();
 }
 
 
 // Рендер формы и добавление обработчиков для ее элементов
 const renderForm = () => {
-    formInnerHTML(isLoadComment, addFormEl, userNameInput, userTextInput)
+    // userNameInput = ;
+
+    formInnerHTML(isLoadComment, addFormEl, userNameInput, userTextInput);
+
     if (!isLoadComment) {
         nameInputEl = document.getElementById('name-input');
         textInputEl = document.getElementById('text-input');
@@ -222,15 +200,11 @@ const renderForm = () => {
             isLoadComment = true;
             renderForm();
 
-            userNameInput = nameInputEl.value
-                .replaceAll("&", "&amp;")
-                .replaceAll("<", "&lt;")
-                .replaceAll(">", "&gt;");
             userTextInput = textScreen(textInputEl.value);
 
-            sendComment(userNameInput, userTextInput)
+            sendComment(token, userNameInput, userTextInput)
                 .then(() => {
-                    return getComments();
+                    return getComments(token);
                 })
                 .then((data) => {
                     comments = data;
@@ -238,7 +212,6 @@ const renderForm = () => {
                 })
                 .then(() => {
                     isLoadComment = false;
-                    userNameInput = "";
                     userTextInput = "";
                     renderForm();
                 })
@@ -256,7 +229,7 @@ const renderForm = () => {
 };
 
 
-getComments()
+getComments(token)
     .then((data) => {
         comments = data;
         renderComments();
