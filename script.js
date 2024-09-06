@@ -23,9 +23,9 @@ let fields = [
 // Функция для имитации запросов в API
 function delay(interval = 300) {
     return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve();
-      }, interval);
+        setTimeout(() => {
+            resolve();
+        }, interval);
     });
 }
 
@@ -86,7 +86,7 @@ deleteButtonEl.addEventListener("click", () => {
 
 // Получает данные с API, преобразует в нужный формат
 const getComments = () => {
-    return fetch("https://wedev-api.sky.pro/api/v1/anton-pashinov/comments", { method: "GET" })
+    return fetch("https://wedev-api.sky.pro/api/v1/anton-pashinov12/comments", { method: "GET" })
         .then((response) => {
             return response.json();
         })
@@ -143,37 +143,34 @@ const renderForm = () => {
         // Обработка события Click для кнопки отправки нового комментария
         sendButtonEl.addEventListener('click', () => {
             if (!formValidate(...fields)) return;
-            
+
             isLoadComment = true;
             renderForm();
 
-            const date = new Date().toLocaleString(...optionsDate);
             userNameInput = nameInputEl.value
                 .replaceAll("&", "&amp;")
                 .replaceAll("<", "&lt;")
                 .replaceAll(">", "&gt;");
             userTextInput = textScreen(textInputEl.value);
 
-            fetch("https://wedev-api.sky.pro/api/v1/anton-pashinov/comments",
+            fetch("https://wedev-api.sky.pro/api/v1/anton-pashinov12/comments",
                 {
                     method: "POST",
                     body: JSON.stringify({
                         text: userTextInput,
                         name: userNameInput,
                         forceError: true,
-                    }),                    
+                    }),
                 })
                 .then((response) => {
                     if (response.status === 400) {
                         throw new Error("Текст должен быть не короче трех символов");
                     };
                     if (response.status === 500) {
-                        sendButtonEl.click();
+                        throw new Error("Ошибка сервера");
                     };
-                    userNameInput = "";
-                    userTextInput = "";
                 })
-                .then(() => {                    
+                .then(() => {
                     return getComments();
                 })
                 .then(() => {
@@ -181,13 +178,18 @@ const renderForm = () => {
                 })
                 .then(() => {
                     isLoadComment = false;
+                    userNameInput = "";
+                    userTextInput = "";
                     renderForm();
                 })
-                .catch((error) => {                                        
-                    isLoadComment = false;
-                    renderForm();
-                    sendButtonEl.disabled = false;
-                    alert(error.message);
+                .catch((error) => {
+                    if (error.message === "Ошибка сервера") {
+                        sendButtonEl.click();
+                    } else {
+                        alert(error.message);
+                        isLoadComment = false;
+                        renderForm();
+                    }
                 })
         });
     };
@@ -208,12 +210,12 @@ const likeEventListeners = () => {
 
             delay(2000).then(() => {
                 comments[index].likes = comments[index].is_liked
-                  ? comments[index].likes - 1
-                  : comments[index].likes + 1;
-                  comments[index].is_liked = !comments[index].is_liked;
-                  comments[index].isLikeLoading = false;
+                    ? comments[index].likes - 1
+                    : comments[index].likes + 1;
+                comments[index].is_liked = !comments[index].is_liked;
+                comments[index].isLikeLoading = false;
                 renderComments();
-              });
+            });
         });
     };
 };
@@ -293,7 +295,7 @@ const commentEventListeners = () => {
 const renderComments = () => {
     const commentsHtml = comments
         .map((comment) => {
-            let activeLike = comment.is_liked ? " -active-like" : "";            
+            let activeLike = comment.is_liked ? " -active-like" : "";
             comment.isLikeLoading ? activeLike += " -loading-like" : activeLike;
 
             let commentBody = comment.text;
@@ -341,7 +343,7 @@ const renderComments = () => {
 
 getComments()
     .then(() => {
-        renderComments();        
+        renderComments();
     })
     .then(() => {
         renderForm();
