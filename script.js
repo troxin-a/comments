@@ -86,7 +86,7 @@ deleteButtonEl.addEventListener("click", () => {
 
 // Получает данные с API, преобразует в нужный формат
 const getComments = () => {
-    return fetch("https://wedev-api.sky.pro/api/v1/anton-pashinov12/comments", { method: "GET" })
+    return fetch("https://wedev-api.sky.pro/api/v1/anton-pashinov/comments", { method: "GET" })
         .then((response) => {
             return response.json();
         })
@@ -153,7 +153,7 @@ const renderForm = () => {
                 .replaceAll(">", "&gt;");
             userTextInput = textScreen(textInputEl.value);
 
-            fetch("https://wedev-api.sky.pro/api/v1/anton-pashinov12/comments",
+            fetch("https://wedev-api.sky.pro/api/v1/anton-pashinov/comments",
                 {
                     method: "POST",
                     body: JSON.stringify({
