@@ -48,7 +48,7 @@ body {
 
     &-body {
         margin-top: 32px;
-        margin-bottom: 32px;
+        margin-bottom: 32px;        
     }
 
     &-text {
@@ -56,6 +56,7 @@ body {
         display: flex;
         flex-direction: column;
         white-space: pre-line;
+        overflow-wrap: break-word;
     }
 
     &-footer {
