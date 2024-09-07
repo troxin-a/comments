@@ -18,7 +18,7 @@ const getComments = (token) => {
                 item["date"] = new Date(Date.parse(item["date"])).toLocaleDateString(...optionsDate);
                 item["is_liked"] = item["isLiked"];
                 item["editing"] = false;
-                item["isLikeLoading"] = false;                
+                item["isLikeLoading"] = false;
                 delete item["author"];
                 delete item["isLiked"];
 
@@ -87,10 +87,26 @@ const deleteComment = (token, id) => {
                 Authorization: token,
             }
         })
-        .then((response) => {            
+        .then((response) => {
             return response.json()
         })
 }
 
+// Авторизация
+const loginUser = (name, password) => {
+    return fetch(`https://wedev-api.sky.pro/api/user/login`,
+        {
+            method: "POST",
+            body: JSON.stringify({
+                login: name,
+                password: password,
+                forceError: false,
+            }),
+        })
+        .then((response) => {
+            return response.json()
+        })        
+}
 
-export { getComments, sendComment, toggleLike, deleteComment }
+
+export { getComments, sendComment, toggleLike, deleteComment, loginUser }

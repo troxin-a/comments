@@ -1,37 +1,75 @@
 "use strict";
 
-import { getComments, sendComment, toggleLike, deleteComment } from "./api.js";
-import { commentsInnerHTML, formInnerHTML } from "./render.js";
+import { getComments, sendComment, toggleLike, deleteComment, loginUser } from "./api.js";
+import { commentsInnerHTML, formInnerHTML, appInnerHTML } from "./render.js";
+
+let isLoginProcess = false;
+let token = "bearer asb4c4boc86gasb4c4boc86g37w3cc3bo3b83k4g37k3bk3cg3c03ck4k";
+token = null;
+
+const containerEl = document.getElementById('container');
+
+function renderApp(token) {
+    appInnerHTML(isLoginProcess, containerEl, token);
+
+    const loginBtnEl = document.getElementById("login-btn");
+    if (loginBtnEl) {
+        loginBtnEl.addEventListener("click", () => {
+            isLoginProcess = !isLoginProcess;
+            // appInnerHTML(isLoginProcess, containerEl, token);
+            renderApp(token)
+        })
+    }
+
+    const loginEl = document.getElementById("login");
+    if (loginEl) {
+        const nameEl = document.getElementById('login-input');
+        const passEl = document.getElementById('password-input');
+
+        loginEl.addEventListener("click", () => {
+            loginUser(nameEl.value, passEl.value)
+                .then((responseData) => {
+                    token = `bearer ${responseData.user.token}`;
+                    isLoginProcess = !isLoginProcess;
+                    renderApp(token);
+                })
+                .then(() => {
+                    return getComments(token)
+                })
+                .then((data) => {
+                    comments = data;
+                    renderComments(document.getElementById('comments'), token);
+                })
+                .then(() => {
+                    if (token) {
+                        renderForm(document.getElementById('form'), token);
+                    }
+                })
+        })
+    }
+
+}
+
+renderApp(token);
+
+let addFormEl = document.getElementById('form');
 
 let nameInputEl = document.getElementById('name-input');
 let textInputEl = document.getElementById('text-input');
 let textErrorEl = document.getElementById('text-error');
 let nameErrorEl = document.getElementById('name-error');
 let sendButtonEl = document.getElementById('send-button');
-const commentsEl = document.getElementById('comments');
-const addFormEl = document.getElementById('form');
+let commentsEl = document.getElementById('comments');
 
 let isLoadComment = false;
 let comments = [];
 let userNameInput = "";
 let userTextInput = "";
 
-let token = "bearer asb4c4boc86gasb4c4boc86g37w3cc3bo3b83k4g37k3bk3cg3c03ck4k";
-
 let fields = [
     { "input": nameInputEl, "err": nameErrorEl, "message": "Заполните имя" },
     { "input": textInputEl, "err": textErrorEl, "message": "Напишите текст" }
 ];
-
-
-// Функция для имитации запросов в API
-function delay(interval = 300) {
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            resolve();
-        }, interval);
-    });
-}
 
 // Экранирование текста
 const textScreen = (text) => {
@@ -82,7 +120,8 @@ function disableButton(button, ...fields) {
 };
 
 // Кнопки лайк
-const likeEventListeners = () => {
+const likeEventListeners = (token) => {
+    const commentsEl = document.getElementById("comments");
     const likeButtonElemets = document.querySelectorAll(".like-button");
 
     // События click для всех кнопок лайк
@@ -92,25 +131,26 @@ const likeEventListeners = () => {
 
             const index = comments.findIndex(item => item.id === btn.dataset.id);
             comments[index].isLikeLoading = true;
-            renderComments();
+            renderComments(commentsEl, token);
 
             toggleLike(token, btn.dataset.id)
                 .then((responseData) => {
                     comments[index].likes = responseData.result["likes"];
                     comments[index].is_liked = responseData.result["isLiked"];
                     comments[index].isLikeLoading = false;
-                    renderComments();
+                    renderComments(commentsEl, token);
                 })
                 .catch(() => {
                     comments[index].isLikeLoading = false;
-                    renderComments();
+                    renderComments(commentsEl, token);
                 });
         });
     };
 };
 
 // Кнопки удалить комментарий
-const deleteEventListeners = () => {
+const deleteEventListeners = (token) => {
+    const commentsEl = document.getElementById("comments");
     const deleteButtonElemets = document.querySelectorAll(".delete-button");
 
     // События click для всех кнопок лайк
@@ -119,16 +159,16 @@ const deleteEventListeners = () => {
             event.stopPropagation();
 
             const index = comments.findIndex(item => item.id === btn.dataset.id);
-            
+
             btn.textContent = "Удаление...";
             btn.disabled = true;
-
+            
             deleteComment(token, btn.dataset.id)
                 .then(() => {
                     getComments(token)
                         .then((data) => {
                             comments = data;
-                            renderComments();
+                            renderComments(commentsEl, token);
                         });
                 })
                 .catch(() => {
@@ -158,17 +198,18 @@ const commentEventListeners = () => {
     };
 };
 
-const renderComments = () => {
-    commentsInnerHTML(comments, commentsEl);
-    likeEventListeners();
-    deleteEventListeners();
-    commentEventListeners();
+const renderComments = (commentsEl, token) => {    
+    commentsInnerHTML(comments, commentsEl, token);
+    if (token) {
+        likeEventListeners(token);
+        deleteEventListeners(token);
+        commentEventListeners();
+    }
 }
 
 
 // Рендер формы и добавление обработчиков для ее элементов
-const renderForm = () => {
-    // userNameInput = ;
+const renderForm = (addFormEl, token) => {
 
     formInnerHTML(isLoadComment, addFormEl, userNameInput, userTextInput);
 
@@ -198,7 +239,7 @@ const renderForm = () => {
             if (!formValidate(...fields)) return;
 
             isLoadComment = true;
-            renderForm();
+            renderForm(addFormEl, token);
 
             userTextInput = textScreen(textInputEl.value);
 
@@ -208,12 +249,12 @@ const renderForm = () => {
                 })
                 .then((data) => {
                     comments = data;
-                    return renderComments();
+                    return renderComments(document.getElementById("comments"), token);
                 })
                 .then(() => {
                     isLoadComment = false;
                     userTextInput = "";
-                    renderForm();
+                    renderForm(addFormEl, token);
                 })
                 .catch((error) => {
                     if (error.message === "Ошибка сервера") {
@@ -221,7 +262,7 @@ const renderForm = () => {
                     } else {
                         alert(error.message);
                         isLoadComment = false;
-                        renderForm();
+                        renderForm(addFormEl, token);
                     }
                 })
         });
@@ -229,11 +270,14 @@ const renderForm = () => {
 };
 
 
+
 getComments(token)
     .then((data) => {
         comments = data;
-        renderComments();
+        renderComments(commentsEl, token);
     })
     .then(() => {
-        renderForm();
+        if (token) {
+            renderForm(addFormEl, token);
+        }
     })
