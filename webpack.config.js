@@ -1,5 +1,5 @@
 module.exports = {
-    entry: "./script.js", // Входной файл, в котором мы пишем свой код
+    entry: "./src/js/script.js", // Входной файл, в котором мы пишем свой код
     output: {
         filename: "script.js" // Выходной файл, который подключаем к HTML
 					// Будет лежать тут "./dist/script.js"

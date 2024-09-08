@@ -31,7 +31,7 @@ export const commentsInnerHTML = (array, element, token) => {
 
 export const formInnerHTML = (isLoad, element, userNameInput, userTextInput) => {
     if (isLoad) {
-        element.innerHTML = `<img src="loader.gif" alt="загрузка">`
+        element.innerHTML = `<img src="./src/img/loader.gif" alt="загрузка">`
     } else {
         element.innerHTML = `<div class="add-form">
   <input type="text" class="add-form-name" placeholder="Введите ваше имя" id="name-input" value="${userNameInput}"/>
@@ -81,7 +81,7 @@ export const appInnerHTML = (isLoginProcess, isRegisterProcess, containerEl, tok
     } else {
         html = `
             <ul class="comments" id="comments">
-              <img src="loader.gif" alt="загрузка">
+              <img src="./src/img/loader.gif" alt="загрузка">
             </ul>
             <div id="form"></div>
             <div class="add-form-row-login">
