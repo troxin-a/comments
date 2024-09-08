@@ -48,7 +48,7 @@ body {
 
     &-body {
         margin-top: 32px;
-        margin-bottom: 32px;        
+        margin-bottom: 32px;
     }
 
     &-text {
@@ -154,7 +154,6 @@ body {
             }
         }
 
-
         &-error,
         &-name,
         &-name-login,
@@ -203,12 +202,10 @@ body {
 
     25% {
         transform: rotate(30deg);
-        ;
     }
 
     75% {
         transform: rotate(-30deg);
-        ;
     }
 
     to {

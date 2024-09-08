@@ -1,14 +1,13 @@
 // Рендерит комментарии
 export const commentsInnerHTML = (array, element, token) => {
+    element.innerHTML = array
+        .map((comment) => {
+            let activeLike = comment.is_liked ? " -active-like" : ""
+            comment.isLikeLoading ? (activeLike += " -loading-like") : activeLike
 
-  element.innerHTML = array
-    .map((comment) => {
-      let activeLike = comment.is_liked ? " -active-like" : "";
-      comment.isLikeLoading ? activeLike += " -loading-like" : activeLike;
+            let commentBody = comment.text
 
-      let commentBody = comment.text;
-
-      return `<li class="comment" data-id="${comment.id}">
+            return `<li class="comment" data-id="${comment.id}">
             <div class="comment-header">
               <div>${comment.name}</div>
               <div>${comment.date}</div>
@@ -26,16 +25,15 @@ export const commentsInnerHTML = (array, element, token) => {
             </div>
             ${token ? `<button class="delete-button" id="delete-button" data-id="${comment.id}">Удалить</button>` : ""}
           </li>`
-    })
-    .join("");
+        })
+        .join("")
 }
 
 export const formInnerHTML = (isLoad, element, userNameInput, userTextInput) => {
-
-  if (isLoad) {
-    element.innerHTML = `<img src="loader.gif" alt="загрузка">`;
-  } else {
-    element.innerHTML = `<div class="add-form">
+    if (isLoad) {
+        element.innerHTML = `<img src="loader.gif" alt="загрузка">`
+    } else {
+        element.innerHTML = `<div class="add-form">
   <input type="text" class="add-form-name" placeholder="Введите ваше имя" id="name-input" value="${userNameInput}"/>
   <div class="add-form-error add-form-error__hide" id="text-error"></div>
   <textarea type="textarea" class="add-form-text" placeholder="Введите ваш коментарий" rows="4"
@@ -44,16 +42,16 @@ export const formInnerHTML = (isLoad, element, userNameInput, userTextInput) => 
     <button disabled class="add-form-button" id="send-button">Написать</button>
   </div>  
 </div>
-`;
-  }
+`
+    }
 }
 
 // Рендерит все приложение
 export const appInnerHTML = (isLoginProcess, isRegisterProcess, containerEl, token) => {
-  let html = ""
+    let html = ""
 
-  if (isLoginProcess) {
-    html = `
+    if (isLoginProcess) {
+        html = `
       <div id="form">
         <div class="add-form">
           <div class="add-form-error add-form-error__hide" id="error-name"></div>
@@ -64,10 +62,9 @@ export const appInnerHTML = (isLoginProcess, isRegisterProcess, containerEl, tok
             <button class="add-form-button" id="login">Вход</button>
           </div>
         </div>
-      </div>`;
-
-  } else if (isRegisterProcess) {
-    html = `
+      </div>`
+    } else if (isRegisterProcess) {
+        html = `
     <div id="form">
       <div class="add-form">
         <div class="add-form-error add-form-error__hide" id="error-login"></div>
@@ -80,21 +77,24 @@ export const appInnerHTML = (isLoginProcess, isRegisterProcess, containerEl, tok
           <button class="add-form-button" id="register-btn">Зарегистрироваться</button>
         </div>
       </div>
-    </div>`;
-  } else {
-    html = `
-      <ul class="comments" id="comments">
-        <img src="loader.gif" alt="загрузка">
-      </ul>
-      <div id="form"></div>
-      <div class="add-form-row-login">
-      ${!token ? `
-        <button class="add-form-button" id="login-btn">Войти</button>
-        <button class="add-form-button" id="to-register-btn">Регистрация</button>`
-        : `<button class="add-form-button" id="logout-btn">Выход</button>`}
-      </div>
-      `;
-  }
+    </div>`
+    } else {
+        html = `
+            <ul class="comments" id="comments">
+              <img src="loader.gif" alt="загрузка">
+            </ul>
+            <div id="form"></div>
+            <div class="add-form-row-login">
+            ${
+                !token
+                    ? `
+              <button class="add-form-button" id="login-btn">Войти</button>
+              <button class="add-form-button" id="to-register-btn">Регистрация</button>`
+                    : `<button class="add-form-button" id="logout-btn">Выход</button>`
+            }
+            </div>
+      `
+    }
 
-  containerEl.innerHTML = html;
+    containerEl.innerHTML = html
 }
