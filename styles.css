@@ -111,6 +111,7 @@ body {
 .add-form-row-login {
   display: flex;
   justify-content: center;
+  gap: 20px;
 }
 .add-form-button {
   margin-top: 24px;

@@ -48,6 +48,9 @@ const sendComment = (token, name, text) => {
             if (response.status === 500) {
                 throw new Error("Ошибка сервера");
             };
+            if (response.status === 401) {
+                throw new Error("Ошибка авторизации");
+            };
         })
 }
 
@@ -65,13 +68,10 @@ const toggleLike = (token, id) => {
             }
         })
         .then((response) => {
-            return response.json()
-            // if (response.status === 400) {
-            //     throw new Error("Текст должен быть не короче трех символов");
-            // };
-            // if (response.status === 500) {
-            //     throw new Error("Ошибка сервера");
-            // };
+            if (response.status === 401) {
+                throw new Error("Ошибка авторизации");
+            };
+            return response.json()            
         })
 }
 
@@ -88,6 +88,9 @@ const deleteComment = (token, id) => {
             }
         })
         .then((response) => {
+            if (response.status === 401) {
+                throw new Error("Ошибка авторизации");
+            };
             return response.json()
         })
 }
@@ -104,9 +107,32 @@ const loginUser = (name, password) => {
             }),
         })
         .then((response) => {
+            if (response.status === 400) {
+                throw new Error("Неверный логин или пароль");
+            };
             return response.json()
-        })        
+        })
+}
+
+// Регистрация
+const registerUser = (login, name, password) => {
+    return fetch(`https://wedev-api.sky.pro/api/user`,
+        {
+            method: "POST",
+            body: JSON.stringify({
+                login: login,
+                name: name,
+                password: password,
+                forceError: false,
+            }),
+        })
+        .then((response) => {
+            if (response.status === 400) {
+                throw new Error("Пользователь с таким логином уже существует");
+            };
+            return response.json()
+        })
 }
 
 
-export { getComments, sendComment, toggleLike, deleteComment, loginUser }
+export { getComments, sendComment, toggleLike, deleteComment, loginUser, registerUser }

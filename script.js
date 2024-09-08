@@ -1,40 +1,59 @@
 "use strict";
 
-import { getComments, sendComment, toggleLike, deleteComment, loginUser } from "./api.js";
+import { getComments, sendComment, toggleLike, deleteComment, loginUser, registerUser } from "./api.js";
 import { commentsInnerHTML, formInnerHTML, appInnerHTML } from "./render.js";
 
 let isLoginProcess = false;
-let token = "bearer asb4c4boc86gasb4c4boc86g37w3cc3bo3b83k4g37k3bk3cg3c03ck4k";
-token = null;
+let isRegisterProcess = false;
+let token = localStorage.getItem("token");
+let userName = localStorage.getItem("userName");
 
 const containerEl = document.getElementById('container');
 
 function renderApp(token) {
-    appInnerHTML(isLoginProcess, containerEl, token);
+    appInnerHTML(isLoginProcess, isRegisterProcess, containerEl, token);
 
     const loginBtnEl = document.getElementById("login-btn");
     if (loginBtnEl) {
         loginBtnEl.addEventListener("click", () => {
             isLoginProcess = !isLoginProcess;
-            // appInnerHTML(isLoginProcess, containerEl, token);
-            renderApp(token)
+            renderApp(token);
+            const nameEl = document.getElementById('login-input');
+            nameEl.focus();
         })
     }
 
     const loginEl = document.getElementById("login");
     if (loginEl) {
+        const errorNameEl = document.getElementById("error-name");
+        const errorPassEl = document.getElementById("error-pass");
         const nameEl = document.getElementById('login-input');
         const passEl = document.getElementById('password-input');
 
+        let fields = [
+            { "input": nameEl, "err": errorNameEl, "message": "Заполните логин" },
+            { "input": passEl, "err": errorPassEl, "message": "Заполните пароль" }
+        ];
+
         loginEl.addEventListener("click", () => {
+            if (!formValidate(...fields)) return;
+
+            nameEl.disabled = true;
+            passEl.disabled = true;
+            loginEl.disabled = true;
+            errorNameEl.classList.add('add-form-error__hide');
+
             loginUser(nameEl.value, passEl.value)
                 .then((responseData) => {
                     token = `bearer ${responseData.user.token}`;
+                    userName = responseData.user.name;
+                    localStorage.setItem("token", token);
+                    localStorage.setItem("userName", userName);
                     isLoginProcess = !isLoginProcess;
                     renderApp(token);
                 })
                 .then(() => {
-                    return getComments(token)
+                    return getComments(token);
                 })
                 .then((data) => {
                     comments = data;
@@ -42,18 +61,114 @@ function renderApp(token) {
                 })
                 .then(() => {
                     if (token) {
-                        renderForm(document.getElementById('form'), token);
+                        renderForm(document.getElementById('form'), token, userName);
                     }
                 })
+                .catch((error) => {
+                    errorNameEl.classList.remove('add-form-error__hide');
+                    errorNameEl.innerHTML = error.message;
+                    nameEl.disabled = false;
+                    passEl.disabled = false;
+                    loginEl.disabled = false;
+                })
+        })
+
+        passEl.addEventListener("keypress", (event) => {
+            if (event.keyCode === 13) {
+                loginEl.click();
+            }
         })
     }
 
+    const logoutEl = document.getElementById("logout-btn");
+    if (logoutEl) {
+        logoutEl.addEventListener("click", () => {
+            token = null;
+            userName = null;
+            localStorage.clear();
+            renderApp(token);
+            getComments(token)
+                .then((data) => {
+                    comments = data;
+                    renderComments(document.getElementById("comments"), token);
+                });
+        });
+    }
+
+    const toRegisterBtnEl = document.getElementById("to-register-btn");
+    if (toRegisterBtnEl) {
+        toRegisterBtnEl.addEventListener("click", () => {
+            isRegisterProcess = !isRegisterProcess;
+            renderApp(token);
+            const loginFieldEl = document.getElementById('login-input');
+            loginFieldEl.focus();
+        });
+    }
+
+    const registerBtnEl = document.getElementById("register-btn");
+    if (registerBtnEl) {
+        const errorLoginEl = document.getElementById("error-login");
+        const errorNameEl = document.getElementById("error-name");
+        const errorPassEl = document.getElementById("error-pass");
+        const loginFieldEl = document.getElementById('login-input');
+        const nameFieldEl = document.getElementById('name-input');
+        const passFieldEl = document.getElementById('password-input');
+
+        let fields = [
+            { "input": loginFieldEl, "err": errorLoginEl, "message": "Заполните логин" },
+            { "input": nameFieldEl, "err": errorNameEl, "message": "Заполните имя" },
+            { "input": passFieldEl, "err": errorPassEl, "message": "Заполните пароль" }
+        ];
+
+        registerBtnEl.addEventListener("click", () => {
+            if (!formValidate(...fields)) return;
+
+            loginFieldEl.disabled = true;
+            nameFieldEl.disabled = true;
+            passFieldEl.disabled = true;
+            errorLoginEl.classList.add('add-form-error__hide');
+
+            registerUser(loginFieldEl.value, nameFieldEl.value, passFieldEl.value)
+                .then((responseData) => {
+                    token = `bearer ${responseData.user.token}`;
+                    userName = responseData.user.name;
+                    localStorage.setItem("token", token);
+                    localStorage.setItem("userName", userName);
+                    isRegisterProcess = !isRegisterProcess;
+                    renderApp(token);
+                })
+                .then(() => {
+                    return getComments(token);
+                })
+                .then((data) => {
+                    comments = data;
+                    renderComments(document.getElementById('comments'), token);
+                })
+                .then(() => {
+                    if (token) {
+                        renderForm(document.getElementById('form'), token, userName);
+                    }
+                })
+                .catch((error) => {
+                    errorLoginEl.classList.remove('add-form-error__hide');
+                    errorLoginEl.innerHTML = error.message;
+                    loginFieldEl.disabled = false;
+                    nameFieldEl.disabled = false;
+                    passFieldEl.disabled = false;
+                })
+        });
+
+        passFieldEl.addEventListener("keypress", (event) => {
+            if (event.keyCode === 13) {
+                registerBtnEl.click();
+            }
+        })
+    }
 }
 
 renderApp(token);
 
 let addFormEl = document.getElementById('form');
-
 let nameInputEl = document.getElementById('name-input');
 let textInputEl = document.getElementById('text-input');
 let textErrorEl = document.getElementById('text-error');
@@ -140,7 +255,8 @@ const likeEventListeners = (token) => {
                     comments[index].isLikeLoading = false;
                     renderComments(commentsEl, token);
                 })
-                .catch(() => {
+                .catch((error) => {
+                    alert(error.message);
                     comments[index].isLikeLoading = false;
                     renderComments(commentsEl, token);
                 });
@@ -158,11 +274,9 @@ const deleteEventListeners = (token) => {
         btn.addEventListener('click', (event) => {
             event.stopPropagation();
 
-            const index = comments.findIndex(item => item.id === btn.dataset.id);
-
             btn.textContent = "Удаление...";
             btn.disabled = true;
-            
+
             deleteComment(token, btn.dataset.id)
                 .then(() => {
                     getComments(token)
@@ -171,7 +285,8 @@ const deleteEventListeners = (token) => {
                             renderComments(commentsEl, token);
                         });
                 })
-                .catch(() => {
+                .catch((error) => {
+                    alert(error.message);
                     btn.textContent = "Удалить";
                     btn.disabled = false;
                 });
@@ -198,7 +313,7 @@ const commentEventListeners = () => {
     };
 };
 
-const renderComments = (commentsEl, token) => {    
+const renderComments = (commentsEl, token) => {
     commentsInnerHTML(comments, commentsEl, token);
     if (token) {
         likeEventListeners(token);
@@ -209,7 +324,7 @@ const renderComments = (commentsEl, token) => {
 
 
 // Рендер формы и добавление обработчиков для ее элементов
-const renderForm = (addFormEl, token) => {
+const renderForm = (addFormEl, token, userName) => {
 
     formInnerHTML(isLoadComment, addFormEl, userNameInput, userTextInput);
 
@@ -217,15 +332,14 @@ const renderForm = (addFormEl, token) => {
         nameInputEl = document.getElementById('name-input');
         textInputEl = document.getElementById('text-input');
         textErrorEl = document.getElementById('text-error');
-        nameErrorEl = document.getElementById('name-error');
         sendButtonEl = document.getElementById('send-button');
 
         fields = [
-            { "input": nameInputEl, "err": nameErrorEl, "message": "Заполните имя" },
             { "input": textInputEl, "err": textErrorEl, "message": "Напишите текст" }
         ];
 
-        nameInputEl.addEventListener('input', () => disableButton(sendButtonEl, ...fields));
+        nameInputEl.value = userName;
+        nameInputEl.disabled = true;
         textInputEl.addEventListener('input', () => disableButton(sendButtonEl, ...fields));
 
         textInputEl.addEventListener('keyup', (event) => {
@@ -239,7 +353,7 @@ const renderForm = (addFormEl, token) => {
             if (!formValidate(...fields)) return;
 
             isLoadComment = true;
-            renderForm(addFormEl, token);
+            renderForm(addFormEl, token, userName);
 
             userTextInput = textScreen(textInputEl.value);
 
@@ -254,22 +368,23 @@ const renderForm = (addFormEl, token) => {
                 .then(() => {
                     isLoadComment = false;
                     userTextInput = "";
-                    renderForm(addFormEl, token);
+                    renderForm(addFormEl, token, userName);
                 })
                 .catch((error) => {
                     if (error.message === "Ошибка сервера") {
                         sendButtonEl.click();
+                    }
+                    if (error.message === "Ошибка авторизации") {
+                        alert("Вы не авторзованы")
                     } else {
                         alert(error.message);
                         isLoadComment = false;
-                        renderForm(addFormEl, token);
+                        renderForm(addFormEl, token, userName);
                     }
                 })
         });
     };
 };
-
-
 
 getComments(token)
     .then((data) => {
@@ -278,6 +393,6 @@ getComments(token)
     })
     .then(() => {
         if (token) {
-            renderForm(addFormEl, token);
+            renderForm(addFormEl, token, userName);
         }
     })
