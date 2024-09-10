@@ -1,0 +1,28 @@
+{
+    "name": "comments",
+    "version": "1.0.0",
+    "description": "Динамическое заполнение страницы JavaScript, с обращением к API. Пользователь может зарегистрироваться, отправлять новые комментарии с цитатами других пользователей, ставить лайки и удалять комментарии.",
+    "main": "script.js",
+    "scripts": {
+        "dev": "webpack --mode development --watch",
+        "format": "prettier --write ."
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/troxin-a/comments.git"
+    },
+    "author": "",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/troxin-a/comments/issues"
+    },
+    "homepage": "https://github.com/troxin-a/comments#readme",
+    "devDependencies": {
+        "prettier": "^3.3.3",
+        "webpack": "^5.94.0",
+        "webpack-cli": "^5.1.4"
+    },
+    "dependencies": {
+        "date-fns": "^3.6.0"
+    }
+}

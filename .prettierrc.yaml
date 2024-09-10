@@ -1,0 +1,4 @@
+tabWidth: 4 # Ширина отступа в строке
+semi: false # (;) в конце строки
+singleQuote: false # Двойные кавычки
+printWidth: 120 # Максимальная строка
