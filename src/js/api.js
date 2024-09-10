@@ -20,7 +20,6 @@ const getComments = (token) => {
         .then((responseData) => {
             return responseData.comments.map((item) => {
                 item["name"] = item["author"]["name"]
-                // item["date"] = new Date(Date.parse(item["date"])).toLocaleDateString(...optionsDate);
                 item["date"] = format(new Date(item["date"]), "yyyy-MM-dd hh.mm.ss")
                 item["is_liked"] = item["isLiked"]
                 item["editing"] = false

@@ -193,15 +193,9 @@ let fields = [
     { input: textInputEl, err: textErrorEl, message: "Напишите текст" },
 ]
 
-// Экранирование текста
+// Чистка текста от лишних паразитов
 const textScreen = (text) => {
-    let newText = text
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll("[quote]", `<div class="quote">`)
-        .replaceAll("[/quote]", `</div>`)
-        .trim()
+    let newText = text.trim()
 
     // Чистит от лишних переносов
     while (newText.includes("\n\n")) {
@@ -210,6 +204,7 @@ const textScreen = (text) => {
 
     return newText
 }
+
 
 // Валидация на пустые строки. Принимает список объектов вида:
 // [ { "input": поле ввода, "err": div с ошибкой, "message": текст ошибки }, ...]
@@ -351,8 +346,8 @@ const renderForm = (addFormEl, token, userName) => {
 
         // Обработка события Click для кнопки отправки нового комментария
         sendButtonEl.addEventListener("click", () => {
-            if (!formValidate(...fields)) return
-
+            if (!formValidate(...fields)) return            
+            
             isLoadComment = true
             renderForm(addFormEl, token, userName)
 
